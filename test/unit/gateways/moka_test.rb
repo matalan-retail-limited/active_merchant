@@ -106,6 +106,54 @@ class MokaTest < Test::Unit::TestCase
     assert_equal 'PaymentDealer.DoVoid.InvalidRequest', response.error_code
   end
 
+  def test_buyer_information_is_passed
+    options = @options.merge({
+      billing_address: address,
+      email: 'safiye.ali@example.com'
+    })
+
+    stub_comms do
+      @gateway.authorize(@amount, @credit_card, options)
+    end.check_request do |_endpoint, data, _headers|
+      buyer_info = JSON.parse(data)['PaymentDealerRequest']['BuyerInformation']
+      assert_equal buyer_info['BuyerFullName'], [@credit_card.first_name, @credit_card.last_name].join(' ')
+      assert_equal buyer_info['BuyerEmail'], 'safiye.ali@example.com'
+      assert_equal buyer_info['BuyerAddress'], options[:billing_address][:address1]
+      assert_equal buyer_info['BuyerGsmNumber'], options[:billing_address][:phone]
+    end.respond_with(successful_response)
+  end
+
+  def test_basket_product_is_passed
+    options = @options.merge({
+      basket_product: [
+        {
+          product_id: 333,
+          product_code: '0173',
+          unit_price: 19900,
+          quantity: 1
+        },
+        {
+          product_id: 281,
+          product_code: '38',
+          unit_price: 5000,
+          quantity: 1
+        }
+      ]
+    })
+
+    stub_comms do
+      @gateway.authorize(24900, @credit_card, options)
+    end.check_request do |_endpoint, data, _headers|
+      basket = JSON.parse(data)['PaymentDealerRequest']['BasketProduct']
+      basket.each_with_index do |product, i|
+        assert_equal product['ProductId'], options[:basket_product][i][:product_id]
+        assert_equal product['ProductCode'], options[:basket_product][i][:product_code]
+        assert_equal product['UnitPrice'], (sprintf '%.2f', options[:basket_product][i][:unit_price] / 100)
+        assert_equal product['Quantity'], options[:basket_product][i][:quantity]
+      end
+    end.respond_with(successful_response)
+  end
+
   private
 
   def successful_response

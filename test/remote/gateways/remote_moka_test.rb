@@ -26,6 +26,55 @@ class RemoteMokaTest < Test::Unit::TestCase
     assert_equal 'Success', response.message
   end
 
+  def test_successful_purchase_with_more_options
+    options = {
+      order_id: '1',
+      ip: '127.0.0.1',
+      sub_merchant_name: 'Example Co.',
+      is_pool_payment: 1
+    }
+
+    response = @gateway.purchase(@amount, @credit_card, options)
+    assert_success response
+    assert_equal 'Success', response.message
+  end
+
+  def test_successful_purchase_with_buyer_information
+    options = {
+      billing_address: address,
+      email: 'safiye.ali@example.com'
+    }
+
+    response = @gateway.purchase(@amount, @credit_card, options)
+    assert_success response
+    assert_equal 'Success', response.message
+  end
+
+  def test_successful_purchase_with_basket_products
+    # Basket Products must be on the list of Merchant Products for your Moka account.
+    # To see this list or add products to it, log in to your Moka Dashboard
+    options = {
+      basket_product: [
+        {
+          product_id: 333,
+          product_code: '0173',
+          unit_price: 19900,
+          quantity: 1
+        },
+        {
+          product_id: 281,
+          product_code: '38',
+          unit_price: 5000,
+          quantity: 1
+        }
+      ]
+    }
+
+    response = @gateway.purchase(24900, @credit_card, options)
+    assert_success response
+    assert_equal 'Success', response.message
+  end
+
   def test_failed_purchase
     response = @gateway.purchase(@amount, @declined_card, @options)
     assert_failure response

@@ -109,6 +109,8 @@ module ActiveMerchant #:nodoc:
         add_payment(post, payment)
         add_additional_auth_purchase_data(post, options)
         add_additional_transaction_data(post, options)
+        add_buyer_information(post, payment, options)
+        add_basket_product(post, options[:basket_product]) if options[:basket_product]
       end
 
       def add_payment_dealer_authentication(post)
@@ -145,6 +147,34 @@ module ActiveMerchant #:nodoc:
       def add_additional_auth_purchase_data(post, options)
         post[:PaymentDealerRequest][:IsPreAuth] = options[:pre_auth]
         post[:PaymentDealerRequest][:Description] = options[:order_id] if options[:order_id]
+        post[:SubMerchantName] = options[:sub_merchant_name] if options[:sub_merchant_name]
+        post[:IsPoolPayment] = options[:is_pool_payment] || 0
+      end
+
+      def add_buyer_information(post, card, options)
+        obj = {}
+
+        obj[:BuyerFullName] = card.name || ''
+        obj[:BuyerEmail] = options[:email] if options[:email]
+        obj[:BuyerAddress] = options[:billing_address][:address1] if options[:billing_address]
+        obj[:BuyerGsmNumber] = options[:billing_address][:phone] if options[:billing_address]
+
+        post[:PaymentDealerRequest][:BuyerInformation] = obj
+      end
+
+      def add_basket_product(post, basket_options)
+        basket = []
+
+        basket_options.each do |product|
+          obj = {}
+          obj[:ProductId] = product[:product_id] if product[:product_id]
+          obj[:ProductCode] = product[:product_code] if product[:product_code]
+          obj[:UnitPrice] = amount(product[:unit_price]) if product[:unit_price]
+          obj[:Quantity] = product[:quantity] if product[:quantity]
+          basket << obj
+        end
+
+        post[:PaymentDealerRequest][:BasketProduct] = basket
       end
 
       def add_additional_transaction_data(post, options)
