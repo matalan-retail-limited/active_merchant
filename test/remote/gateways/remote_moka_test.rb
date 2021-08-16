@@ -152,4 +152,35 @@ class RemoteMokaTest < Test::Unit::TestCase
     assert_failure response
     assert_equal 'PaymentDealer.DoVoid.InvalidRequest', response.message
   end
+
+  def test_successful_verify
+    response = @gateway.verify(@credit_card, @options)
+    assert_success response
+    assert_match 'Success', response.message
+  end
+
+  def test_failed_verify
+    response = @gateway.verify(@declined_card, @options)
+    assert_failure response
+    assert_match 'PaymentDealer.DoDirectPayment.VirtualPosNotAvailable', response.message
+  end
+
+  def test_transcript_scrubbing
+    transcript = capture_transcript(@gateway) do
+      @gateway.purchase(@amount, @credit_card, @options)
+    end
+    transcript = @gateway.scrub(transcript)
+
+    assert_scrubbed(@credit_card.number, transcript)
+    assert_scrubbed(@credit_card.verification_value, transcript)
+    assert_scrubbed(@gateway.options[:dealer_code], transcript)
+    assert_scrubbed(@gateway.options[:username], transcript)
+    assert_scrubbed(@gateway.options[:password], transcript)
+    assert_scrubbed(check_key, transcript)
+  end
+
+  def check_key
+    str = "#{@gateway.options[:dealer_code]}MK#{@gateway.options[:username]}PD#{@gateway.options[:password]}"
+    Digest::SHA256.hexdigest(str)
+  end
 end
