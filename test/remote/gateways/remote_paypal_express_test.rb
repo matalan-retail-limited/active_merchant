@@ -48,16 +48,6 @@ class PaypalExpressTest < Test::Unit::TestCase
     assert !response.params['token'].blank?
   end
 
-  def test_transcript_scrubbing
-    transcript = capture_transcript(@gateway) do
-      @gateway.setup_authorization(500, @options)
-    end
-    transcript = @gateway.scrub(transcript)
-
-    assert_scrubbed(@gateway.options[:login], transcript)
-    assert_scrubbed(@gateway.options[:password], transcript)
-  end
-
   def test_set_express_order
     @options.update(
       :return_url => 'http://example.com',
@@ -68,5 +58,15 @@ class PaypalExpressTest < Test::Unit::TestCase
     assert response.success?
     assert response.test?
     assert !response.params['token'].blank?
+  end
+
+  def test_transcript_scrubbing
+    transcript = capture_transcript(@gateway) do
+      @gateway.setup_authorization(500, @options)
+    end
+    transcript = @gateway.scrub(transcript)
+
+    assert_scrubbed(@gateway.options[:login], transcript)
+    assert_scrubbed(@gateway.options[:password], transcript)
   end
 end

@@ -66,6 +66,12 @@ module ActiveMerchant #:nodoc:
         commit 'DoExpressCheckoutPayment', build_sale_or_authorization_request('Sale', money, options)
       end
 
+      def order(money, options = {})
+        requires!(options, :token, :payer_id)
+
+        commit 'DoExpressCheckoutPayment', build_sale_or_authorization_request('Order', money, options)
+      end
+
       def store(token, options = {})
         commit 'CreateBillingAgreement', build_create_billing_agreement_request(token, options)
       end
